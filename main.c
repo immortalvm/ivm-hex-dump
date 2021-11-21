@@ -287,7 +287,7 @@ int encode()
     int data_width = (page_width - checksum_width) / 2;
     if ( data_width <= 0 )
     {
-        fprintf( stderr, "Page width too small, need room room for data\n" );
+        fprintf( stderr, "Page width too small, need room for data\n" );
     }
     
     char buffer[data_width];
