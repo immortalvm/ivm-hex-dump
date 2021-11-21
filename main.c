@@ -122,7 +122,7 @@ int main( int argc, char* argv[] )
                 "colums each containing one of [abcdef0123456789]. Each row starts with a 3 digit hex line number, space, "
                 "then 3 digit hex checksum and ending with space.\n"
                 "If height is 0, one page will be created.\n"
-                "Pages are written to the output folder named: out/%%05d.txt\n"
+                "Pages are written to the output folder named: <out-dir>/%%05d.txt\n"
                 "\n"
                 "In decode mode the application will read text files in input folder: %%05d.txt"
                 "and decode to binary <file>, reporting error on checksum mismatch.\n"
@@ -285,6 +285,10 @@ int encode()
 
     int checksum_width = 8;
     int data_width = (page_width - checksum_width) / 2;
+    if ( data_width <= 0 )
+    {
+        fprintf( stderr, "Page width too small, need room room for data\n" );
+    }
     
     char buffer[data_width];
     int buffer_size = fread( buffer, 1, data_width, file );
