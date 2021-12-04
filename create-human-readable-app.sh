@@ -29,7 +29,7 @@ width=`convert -debug annotate  xc: -density 72 -font $font -pointsize $pointsiz
 rm -rf $out
 mkdir $out
 # subtract pointsize since convert add bottom border
-ivm-hex-dump --font "$width""x""$pointsize" --width $w \
+ivm-hex-dump --fill-last-page --font "$width""x""$pointsize" --width $w \
              --height $(($h-$pointsize)) -o $out $in
 
 for i in $out/*.txt ; do

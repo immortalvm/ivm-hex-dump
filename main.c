@@ -8,6 +8,7 @@ char* input_dir = ".";
 int width = 4096 - 32*2, height = 2160 - 32*2;
 int font_width = 16, font_height = 16;
 int start_row = 0;
+int fill_last_page = 0;
 
 int decode();
 int encode();
@@ -52,9 +53,10 @@ int main( int argc, char* argv[] )
                 return  -1;
             }
             int count = sscanf( argv[arg_index], "%dx%d", &font_width, &font_height);
-            if ( count != 2 )
+            if ( font_width * font_height <= 0  )
             {
-                fprintf( stderr, "--font requires a WxH argument\n" );
+                fprintf( stderr, "Illegal font size\n" );
+                return  -1;
             }
         }
         else if ( !strcmp( argv[arg_index], "--start-row" ) )
@@ -99,29 +101,34 @@ int main( int argc, char* argv[] )
                 fprintf( stderr, "--height requires an argument\n" );
             }
         }
+        else if ( !strcmp( argv[arg_index], "-f" ) || !strcmp( argv[arg_index], "--fill-last-page" ))
+        {
+            fill_last_page = 1;
+        }
         else if ( !strcmp( argv[arg_index], "-h" ) || !strcmp( argv[arg_index], "--help" ) )
         {
             printf(
                 "Usage: ivm-hex-dump (options) <file>\n"
                 "\n"
-                "  Encoding options:"
-                "    -d|--decode       : Run in decode mode\n"
-                "    -o|--out-dir      : Write encoded pages here\n"
-                "    --width <widht>   : Width in pixels of target device\n"
-                "    --height <height> : Height in pixels of target device\n"
-                "    --font <WxH>      : Font width x height in pixels\n"
+                "  Encoding options:\n"
+                "    -o|--out-dir        : Write encoded pages here\n"
+                "    -f|--fill-last-page : Fill last page with space to make all pages same size\n"
+                "    --width <width>     : Width in pixels of target device\n"
+                "    --height <height>   : Height in pixels of target device\n"
+                "    --font <WxH>        : Font width x height in pixels\n"
                 "\n"
                 "  Decoding options:\n"
+                "    -d|--decode       : Run in decode mode\n"
                 "    -i|--in-dir       : Read encoded pages from here\n"
                 "\n"
                 "  Common options:\n"
                 "    --start-row       : Start row, can be used for partial coding / decoding\n"
                 "\n"
-                "In encode mode the application will hex encode the input file ascii text pages, where each page has "
+                "In encode mode the application will hex encode the input file into ASCII text pages, where each page has "
                 "width / font_width columns and height / font_height rows. A hex encoded byte uses two "
-                "colums each containing one of [abcdef0123456789]. Each row starts with a 3 digit hex line number, space, "
+                "columns each containing one of [abcdef0123456789]. Each row starts with a 3 digit hex line number, space, "
                 "then 3 digit hex checksum and ending with space.\n"
-                "If height is 0, one page will be created.\n"
+                "If height is 0, one continuous page will be created.\n"
                 "Pages are written to the output folder named: <out-dir>/%%05d.txt\n"
                 "\n"
                 "In decode mode the application will read text files in input folder: %%05d.txt"
@@ -271,7 +278,7 @@ int encode()
     FILE* file = fopen( file_arg, "r" );
     if ( file == NULL )
     {
-        fprintf( stderr, "Failed to open file %s\n", file_arg );
+        fprintf( stderr, "Failed to open file '%s'\n", file_arg );
         return 1;
     }
     printf( "Encoding...\n" );
@@ -319,11 +326,31 @@ int encode()
             fprintf( out, "%.2hhx", buffer[read] );
             read++;
         }
+
+        // Fill?
+        while ( fill_last_page && buffer_size < data_width )
+        {
+            fprintf( out, "  " );
+            buffer_size++;
+        }
+        
         fprintf( out, "\n" );
 
         buffer_size = fread( buffer, 1, sizeof(buffer), file );
         row++;
     }
 
+    // Fill?
+    while ( out && fill_last_page && row % page_height != 0 )
+    {
+        for ( int i = 0; i < page_width; i++ )
+        {
+            fprintf( out, " " );
+        }
+        fprintf( out, "\n" );
+        row++;
+    }
+    if ( out ) fclose( out );
+    
     return 0;
 }
