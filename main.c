@@ -9,6 +9,7 @@ int width = 4096 - 32*2, height = 2160 - 32*2;
 int font_width = 16, font_height = 16;
 int start_row = 0;
 int fill_last_page = 0;
+int verbose = 1;
 
 int decode();
 int encode();
@@ -149,7 +150,8 @@ int main( int argc, char* argv[] )
         arg_index++;
     }
 
-
+    verbose = file_arg != NULL;
+    
     if ( decode_mode )
     {
         return decode();
@@ -179,7 +181,10 @@ FILE* open_page( int page, char* dir, char* mode, int print_error )
     {
         if ( *mode == 'r' )
         {
-            printf( "Reading %s\n", file_name );
+            if ( verbose )
+            { 
+                printf( "Reading %s\n", file_name );
+            }
         }
         else
         {
@@ -206,13 +211,19 @@ unsigned int checksum(char* buffer, unsigned int size, unsigned int line)
 
 int decode()
 {
-    FILE* out = fopen( file_arg, "w" );
+    FILE* out = stdout;
+    if ( file_arg != NULL )
+    {
+        out = fopen( file_arg, "w" );
+    }
+    
     if ( out == NULL )
     {
         fprintf( stderr, "Failed to create file %s\n", file_arg );
         return 1;
     }
-    printf( "Decoding...\n" );
+    if (verbose)
+        printf( "Decoding...\n" );
 
     int page = 0;
     int row = start_row;
@@ -224,6 +235,11 @@ int decode()
 
         while( fgets( buffer, size, file ) )
         {
+            if (buffer[0] == ' ')
+            {
+                continue; // Skip empty lines
+            }
+            
             unsigned int line, check;
             char data[2048];
             int convert = sscanf( buffer, "%3x %3x %s", &line, &check, data );
